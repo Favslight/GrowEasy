@@ -86,8 +86,9 @@ Large components (CRM table) are lazy-loaded via `next/dynamic`.
 4. **Chunk** — Split into batches of 50 records
 5. **Extract** — Each batch sent to AI via provider abstraction
 6. **Validate** — Zod schema check on every AI response
-7. **Retry** — Up to 2 retries on validation/transient failures
-8. **Format** — Aggregate results into API response
+7. **Post-process** — Sanitize `created_at`, `crm_status`, and `data_source`
+8. **Retry** — Up to 2 retries on validation/transient failures
+9. **Format** — Aggregate results into API response
 
 Failed batches do not terminate the import. Configuration errors (missing API key) fail fast.
 
@@ -99,6 +100,7 @@ Failed batches do not terminate the import. Configuration errors (missing API ke
 PromptBuilder (system + user prompts)
   → OpenAIProvider (Structured Outputs, json_schema strict mode)
   → StructuredOutputValidator (Zod)
+  → CrmRecordPostProcessor (date + enum sanitization)
   → RetryService (bounded retries)
 ```
 

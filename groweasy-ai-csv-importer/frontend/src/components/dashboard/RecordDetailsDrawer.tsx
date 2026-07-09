@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect } from 'react';
-import type { EnrichedCrmRecord } from '@/lib/crm-display';
-import { formatStatusLabel } from '@/lib/crm-display';
+import type { CrmRecord } from '@/types/csv';
+import { formatDataSourceLabel, formatMobile, formatStatusLabel } from '@/lib/crm-display';
 
 interface RecordDetailsDrawerProps {
-  record: EnrichedCrmRecord | null;
+  record: CrmRecord | null;
   onClose: () => void;
 }
 
@@ -48,19 +48,27 @@ export function RecordDetailsDrawer({ record, onClose }: RecordDetailsDrawerProp
   const sections: DetailSection[] = [
     {
       title: 'Lead information',
-      fields: [{ label: 'Name', value: record.name }, { label: 'Date', value: record.date }],
+      fields: [
+        { label: 'Name', value: record.name },
+        { label: 'Created at', value: record.created_at },
+        { label: 'Lead owner', value: record.lead_owner },
+      ],
     },
     {
       title: 'Contact',
-      fields: [{ label: 'Email', value: record.email }, { label: 'Mobile', value: record.mobile }],
-    },
-    {
-      title: 'Company',
-      fields: [{ label: 'Company', value: record.company }],
-    },
-    {
-      title: 'Location',
       fields: [
+        { label: 'Email', value: record.email },
+        {
+          label: 'Mobile',
+          value: formatMobile(record.country_code, record.mobile_without_country_code),
+        },
+        { label: 'Country code', value: record.country_code },
+      ],
+    },
+    {
+      title: 'Company & location',
+      fields: [
+        { label: 'Company', value: record.company },
         { label: 'City', value: record.city },
         { label: 'State', value: record.state },
         { label: 'Country', value: record.country },
@@ -69,13 +77,17 @@ export function RecordDetailsDrawer({ record, onClose }: RecordDetailsDrawerProp
     {
       title: 'CRM',
       fields: [
-        { label: 'Status', value: formatStatusLabel(record.status) },
-        { label: 'Source', value: record.source },
+        { label: 'CRM status', value: formatStatusLabel(record.crm_status) },
+        { label: 'Data source', value: formatDataSourceLabel(record.data_source) },
+        { label: 'Possession time', value: record.possession_time },
       ],
     },
     {
-      title: 'Notes',
-      fields: [{ label: 'CRM note', value: record.crm_note }],
+      title: 'Notes & description',
+      fields: [
+        { label: 'CRM note', value: record.crm_note },
+        { label: 'Description', value: record.description },
+      ],
     },
   ];
 

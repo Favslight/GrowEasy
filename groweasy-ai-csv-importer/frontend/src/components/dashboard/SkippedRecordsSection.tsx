@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import type { SkippedRecord } from '@/types/csv';
+import { formatMobile } from '@/lib/crm-display';
 
 interface SkippedRecordsSectionProps {
   records: SkippedRecord[];
@@ -22,7 +23,7 @@ export function SkippedRecordsSection({ records }: SkippedRecordsSectionProps): 
     }
 
     return records.filter((record) =>
-      [record.name, record.email, record.mobile, record.reason]
+      [record.name, record.email, record.country_code, record.mobile_without_country_code, record.reason]
         .join(' ')
         .toLowerCase()
         .includes(query),
@@ -54,7 +55,7 @@ export function SkippedRecordsSection({ records }: SkippedRecordsSectionProps): 
                 Skipped records
               </h2>
               <p className="mt-0.5 text-sm text-muted">
-                {records.length.toLocaleString()} rows excluded with reasons
+                {records.length.toLocaleString()} rows excluded (no email and no mobile)
               </p>
             </div>
           </div>
@@ -99,12 +100,14 @@ export function SkippedRecordsSection({ records }: SkippedRecordsSectionProps): 
                 </thead>
                 <tbody>
                   {filteredRecords.map((record, index) => (
-                    <tr key={`${record.email}-${record.mobile}-${index}`} className="border-b border-subtle">
+                    <tr key={`${record.email}-${record.mobile_without_country_code}-${index}`} className="border-b border-subtle">
                       <td className="table-cell">
                         <div className="space-y-1">
                           <p className="font-medium text-body">{renderText(record.name)}</p>
                           <p className="text-xs text-muted">{renderText(record.email)}</p>
-                          <p className="text-xs text-muted">{renderText(record.mobile)}</p>
+                          <p className="text-xs text-muted">
+                            {renderText(formatMobile(record.country_code, record.mobile_without_country_code))}
+                          </p>
                         </div>
                       </td>
                       <td className="table-cell">{renderText(record.reason)}</td>

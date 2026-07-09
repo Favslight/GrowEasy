@@ -1,4 +1,5 @@
 import type { CrmRecord, SkippedRecord } from '@/types/csv';
+import { CRM_FIELD_ORDER } from '@/types/csv';
 
 const downloadBlob = (blob: Blob, filename: string): void => {
   const url = URL.createObjectURL(blob);
@@ -7,6 +8,13 @@ const downloadBlob = (blob: Blob, filename: string): void => {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+};
+
+const escapeCsv = (value: string): string => {
+  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 };
 
 export const exportRecordsAsJson = (records: CrmRecord[], filename: string): void => {
@@ -19,16 +27,10 @@ export const exportRecordsAsCsv = (records: CrmRecord[], filename: string): void
     return;
   }
 
-  const headers = Object.keys(records[0]);
-  const escape = (value: string): string => {
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"`;
-    }
-    return value;
-  };
-
-  const rows = records.map((record) => headers.map((header) => escape(record[header as keyof CrmRecord] ?? '')).join(','));
-  const csv = [headers.join(','), ...rows].join('\n');
+  const rows = records.map((record) =>
+    CRM_FIELD_ORDER.map((header) => escapeCsv(record[header] ?? '')).join(','),
+  );
+  const csv = [CRM_FIELD_ORDER.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   downloadBlob(blob, filename);
 };
@@ -43,15 +45,16 @@ export const exportSkippedAsCsv = (records: SkippedRecord[], filename: string): 
     return;
   }
 
-  const headers = ['name', 'email', 'mobile', 'reason'];
-  const escape = (value: string): string => {
-    if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-      return `"${value.replace(/"/g, '""')}"`;
-    }
-    return value;
-  };
-
-  const rows = records.map((record) => headers.map((header) => escape(record[header as keyof SkippedRecord] ?? '')).join(','));
+  const headers: (keyof SkippedRecord)[] = [
+    'name',
+    'email',
+    'country_code',
+    'mobile_without_country_code',
+    'reason',
+  ];
+  const rows = records.map((record) =>
+    headers.map((header) => escapeCsv(record[header] ?? '')).join(','),
+  );
   const csv = [headers.join(','), ...rows].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   downloadBlob(blob, filename);

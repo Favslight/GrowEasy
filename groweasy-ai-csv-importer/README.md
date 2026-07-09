@@ -11,7 +11,7 @@ LeadSense is a full-stack SaaS-style application that parses messy lead exports 
 - **CSV Upload & Preview** — drag-and-drop or browse; client-side parsing with PapaParse
 - **Validation** — file type, size (10 MB), empty file, and parse error handling
 - **Backend Processing** — parse, normalize, chunk (50 rows/batch), all in memory
-- **AI Extraction** — OpenAI Structured Outputs with Zod validation and retry (max 2)
+- **AI Extraction** — OpenAI Structured Outputs mapped to full GrowEasy CRM schema (15 fields)
 - **Results Dashboard** — analytics cards, CRM table (search, pagination, column toggle), record drawer
 - **Skipped Records** — collapsible section with reasons and raw data preview
 - **Export** — download CRM records and skipped rows as CSV or JSON
@@ -147,6 +147,34 @@ The backend health check is available at `GET /health`.
 
 ---
 
+## GrowEasy CRM Fields
+
+The AI extracts all 15 GrowEasy CRM fields per the assignment spec:
+
+| Field | Description |
+|-------|-------------|
+| `created_at` | Lead creation date (must parse via `new Date()`) |
+| `name` | Lead name |
+| `email` | Primary email |
+| `country_code` | Country dialing code (e.g. +91) |
+| `mobile_without_country_code` | Mobile without country code |
+| `company` | Company name |
+| `city` | City |
+| `state` | State |
+| `country` | Country |
+| `lead_owner` | Lead owner |
+| `crm_status` | `GOOD_LEAD_FOLLOW_UP`, `DID_NOT_CONNECT`, `BAD_LEAD`, `SALE_DONE` |
+| `crm_note` | Notes, extra contacts, unmapped data |
+| `data_source` | `leads_on_demand`, `meridian_tower`, `eden_park`, `varah_swamy`, `sarjapur_plots` |
+| `possession_time` | Property possession time |
+| `description` | Additional description |
+
+**Skip rule:** Rows with neither email nor mobile are skipped. Rows with at least one contact method are imported.
+
+**Excel files:** Export from Excel as `.csv` before upload (native `.xlsx` is not supported).
+
+---
+
 ## API Documentation
 
 ### `GET /health`
@@ -181,21 +209,30 @@ Upload a CSV file for parsing, normalization, chunking, and AI extraction.
   },
   "records": [
     {
+      "created_at": "2026-05-13 14:20:48",
       "name": "John Doe",
-      "email": "john@example.com",
-      "mobile": "+1 555-1234",
-      "status": "GOOD_LEAD_FOLLOW_UP",
-      "source": "leads_on_demand",
-      "date": "2024-01-15",
-      "crm_note": ""
+      "email": "john.doe@example.com",
+      "country_code": "+91",
+      "mobile_without_country_code": "9876543210",
+      "company": "GrowEasy",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "country": "India",
+      "lead_owner": "test@gmail.com",
+      "crm_status": "GOOD_LEAD_FOLLOW_UP",
+      "crm_note": "Client is asking to reschedule demo",
+      "data_source": "leads_on_demand",
+      "possession_time": "",
+      "description": ""
     }
   ],
   "skipped": [
     {
       "name": "Jane",
       "email": "",
-      "mobile": "555-0000",
-      "reason": "Missing email address"
+      "country_code": "",
+      "mobile_without_country_code": "",
+      "reason": "Missing email and mobile"
     }
   ]
 }

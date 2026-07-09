@@ -1,15 +1,26 @@
 import { z } from 'zod';
-import { CRM_SOURCES, CRM_STATUSES } from '../config/crm';
+import { CRM_FIELD_ORDER, CRM_SOURCES, CRM_STATUSES } from '../config/crm';
+
+const crmStatusSchema = z.union([z.enum(CRM_STATUSES), z.literal('')]);
+const dataSourceSchema = z.union([z.enum(CRM_SOURCES), z.literal('')]);
 
 export const crmRecordSchema = z
   .object({
+    created_at: z.string(),
     name: z.string(),
     email: z.string(),
-    mobile: z.string(),
-    status: z.enum(CRM_STATUSES),
-    source: z.enum(CRM_SOURCES),
-    date: z.string(),
+    country_code: z.string(),
+    mobile_without_country_code: z.string(),
+    company: z.string(),
+    city: z.string(),
+    state: z.string(),
+    country: z.string(),
+    lead_owner: z.string(),
+    crm_status: crmStatusSchema,
     crm_note: z.string(),
+    data_source: dataSourceSchema,
+    possession_time: z.string(),
+    description: z.string(),
   })
   .strict();
 
@@ -17,7 +28,8 @@ export const skippedRecordSchema = z
   .object({
     name: z.string(),
     email: z.string(),
-    mobile: z.string(),
+    country_code: z.string(),
+    mobile_without_country_code: z.string(),
     reason: z.string(),
   })
   .strict();
@@ -33,19 +45,29 @@ export type CrmRecord = z.infer<typeof crmRecordSchema>;
 export type SkippedRecord = z.infer<typeof skippedRecordSchema>;
 export type ExtractionResult = z.infer<typeof extractionResultSchema>;
 
+const crmRecordProperties = {
+  created_at: { type: 'string' },
+  name: { type: 'string' },
+  email: { type: 'string' },
+  country_code: { type: 'string' },
+  mobile_without_country_code: { type: 'string' },
+  company: { type: 'string' },
+  city: { type: 'string' },
+  state: { type: 'string' },
+  country: { type: 'string' },
+  lead_owner: { type: 'string' },
+  crm_status: { type: 'string', enum: [...CRM_STATUSES, ''] },
+  crm_note: { type: 'string' },
+  data_source: { type: 'string', enum: [...CRM_SOURCES, ''] },
+  possession_time: { type: 'string' },
+  description: { type: 'string' },
+} as const;
+
 const crmRecordJsonSchema = {
   type: 'object',
   additionalProperties: false,
-  properties: {
-    name: { type: 'string' },
-    email: { type: 'string' },
-    mobile: { type: 'string' },
-    status: { type: 'string', enum: [...CRM_STATUSES] },
-    source: { type: 'string', enum: [...CRM_SOURCES] },
-    date: { type: 'string' },
-    crm_note: { type: 'string' },
-  },
-  required: ['name', 'email', 'mobile', 'status', 'source', 'date', 'crm_note'],
+  properties: crmRecordProperties,
+  required: [...CRM_FIELD_ORDER],
 } as const;
 
 const skippedRecordJsonSchema = {
@@ -54,10 +76,11 @@ const skippedRecordJsonSchema = {
   properties: {
     name: { type: 'string' },
     email: { type: 'string' },
-    mobile: { type: 'string' },
+    country_code: { type: 'string' },
+    mobile_without_country_code: { type: 'string' },
     reason: { type: 'string' },
   },
-  required: ['name', 'email', 'mobile', 'reason'],
+  required: ['name', 'email', 'country_code', 'mobile_without_country_code', 'reason'],
 } as const;
 
 /**
@@ -79,12 +102,20 @@ export const crmExtractionJsonSchema = {
  * Derived from the same field definitions as the Zod/JSON schemas.
  */
 export const CRM_SCHEMA_DESCRIPTION = [
-  'Each CRM record must contain exactly these fields:',
-  '- name: string. Full name of the lead (empty string if unknown).',
+  'Each CRM record must contain exactly these GrowEasy CRM fields:',
+  '- created_at: string. Lead creation date parseable by new Date(). Empty string if unknown.',
+  '- name: string. Full name of the lead.',
   '- email: string. Primary (first) email address.',
-  '- mobile: string. Primary (first) mobile or phone number.',
-  `- status: one of [${CRM_STATUSES.join(', ')}].`,
-  `- source: one of [${CRM_SOURCES.join(', ')}].`,
-  '- date: string. Preserve a valid date exactly as written, otherwise empty string.',
-  '- crm_note: string. Additional emails, phone numbers, and unmapped column values.',
+  '- country_code: string. Country dialing code (e.g. +91). Empty string if unknown.',
+  '- mobile_without_country_code: string. Primary mobile number without country code.',
+  '- company: string. Company or organization name.',
+  '- city: string. City.',
+  '- state: string. State or province.',
+  '- country: string. Country name.',
+  '- lead_owner: string. Assigned lead owner (often an email).',
+  `- crm_status: one of [${CRM_STATUSES.join(', ')}] or empty string.`,
+  '- crm_note: string. Remarks, follow-ups, extra emails/phones, unmapped values.',
+  `- data_source: one of [${CRM_SOURCES.join(', ')}] or empty string.`,
+  '- possession_time: string. Property possession time when applicable.',
+  '- description: string. Additional description or context.',
 ].join('\n');

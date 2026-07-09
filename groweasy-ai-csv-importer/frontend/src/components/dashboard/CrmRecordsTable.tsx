@@ -12,7 +12,7 @@ import {
   type VisibilityState,
 } from '@tanstack/react-table';
 import type { CrmRecord } from '@/types/csv';
-import { enrichCrmRecords, formatStatusLabel, type EnrichedCrmRecord } from '@/lib/crm-display';
+import { formatDataSourceLabel, formatMobile, formatStatusLabel } from '@/lib/crm-display';
 import { RecordDetailsDrawer } from '@/components/dashboard/RecordDetailsDrawer';
 
 interface CrmRecordsTableProps {
@@ -20,13 +20,13 @@ interface CrmRecordsTableProps {
   onRefresh?: () => void;
 }
 
-const columnHelper = createColumnHelper<EnrichedCrmRecord>();
+const columnHelper = createColumnHelper<CrmRecord>();
 
 const PAGE_SIZE = 10;
 
 const statusStyles: Record<string, string> = {
   GOOD_LEAD_FOLLOW_UP: 'bg-emerald-50 text-emerald-700 ring-emerald-200/60 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-500/20',
-  SALE_DONE: 'bg-brand-50 text-brand-700 ring-brand-200/60 dark:bg-brand-950/40 dark:text-brand-400 dark:ring-brand-500/20',
+  SALE_DONE: 'bg-indigo-50 text-indigo-700 ring-indigo-200/60 dark:bg-indigo-950/40 dark:text-indigo-400 dark:ring-indigo-500/20',
   DID_NOT_CONNECT: 'bg-amber-50 text-amber-700 ring-amber-200/60 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-500/20',
   BAD_LEAD: 'bg-rose-50 text-rose-700 ring-rose-200/60 dark:bg-rose-950/40 dark:text-rose-400 dark:ring-rose-500/20',
 };
@@ -36,41 +36,57 @@ const renderText = (value: string): JSX.Element => (
 );
 
 const COLUMN_LABELS: Record<string, string> = {
+  created_at: 'Created At',
   name: 'Name',
   email: 'Email',
-  mobile: 'Mobile',
+  country_code: 'Country Code',
+  mobile_without_country_code: 'Mobile',
   company: 'Company',
   city: 'City',
   state: 'State',
   country: 'Country',
-  status: 'CRM Status',
-  source: 'Source',
-  date: 'Date',
+  lead_owner: 'Lead Owner',
+  crm_status: 'CRM Status',
   crm_note: 'CRM Note',
+  data_source: 'Data Source',
+  possession_time: 'Possession Time',
+  description: 'Description',
+};
+
+const DEFAULT_HIDDEN: VisibilityState = {
+  country_code: false,
+  state: false,
+  country: false,
+  lead_owner: false,
+  crm_note: false,
+  data_source: false,
+  possession_time: false,
+  description: false,
+  created_at: false,
 };
 
 export function CrmRecordsTable({ records, onRefresh }: CrmRecordsTableProps): JSX.Element {
   const [globalFilter, setGlobalFilter] = useState('');
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({
-    source: false,
-    date: false,
-    crm_note: false,
-  });
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(DEFAULT_HIDDEN);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<EnrichedCrmRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<CrmRecord | null>(null);
 
-  const data = useMemo(() => enrichCrmRecords(records), [records]);
-
-  const columns = useMemo<ColumnDef<EnrichedCrmRecord, string>[]>(
+  const columns = useMemo<ColumnDef<CrmRecord, string>[]>(
     () => [
+      columnHelper.accessor('created_at', { header: () => 'Created At', cell: (info) => renderText(info.getValue()) }),
       columnHelper.accessor('name', { header: () => 'Name', cell: (info) => renderText(info.getValue()) }),
       columnHelper.accessor('email', { header: () => 'Email', cell: (info) => renderText(info.getValue()) }),
-      columnHelper.accessor('mobile', { header: () => 'Mobile', cell: (info) => renderText(info.getValue()) }),
+      columnHelper.accessor('country_code', { header: () => 'Country Code', cell: (info) => renderText(info.getValue()) }),
+      columnHelper.accessor('mobile_without_country_code', {
+        header: () => 'Mobile',
+        cell: (info) => renderText(formatMobile(info.row.original.country_code, info.getValue())),
+      }),
       columnHelper.accessor('company', { header: () => 'Company', cell: (info) => renderText(info.getValue()) }),
       columnHelper.accessor('city', { header: () => 'City', cell: (info) => renderText(info.getValue()) }),
       columnHelper.accessor('state', { header: () => 'State', cell: (info) => renderText(info.getValue()) }),
       columnHelper.accessor('country', { header: () => 'Country', cell: (info) => renderText(info.getValue()) }),
-      columnHelper.accessor('status', {
+      columnHelper.accessor('lead_owner', { header: () => 'Lead Owner', cell: (info) => renderText(info.getValue()) }),
+      columnHelper.accessor('crm_status', {
         header: () => 'CRM Status',
         cell: (info) => {
           const value = info.getValue();
@@ -82,15 +98,19 @@ export function CrmRecordsTable({ records, onRefresh }: CrmRecordsTableProps): J
           );
         },
       }),
-      columnHelper.accessor('source', { header: () => 'Source', cell: (info) => renderText(info.getValue()) }),
-      columnHelper.accessor('date', { header: () => 'Date', cell: (info) => renderText(info.getValue()) }),
       columnHelper.accessor('crm_note', { header: () => 'CRM Note', cell: (info) => renderText(info.getValue()) }),
+      columnHelper.accessor('data_source', {
+        header: () => 'Data Source',
+        cell: (info) => renderText(formatDataSourceLabel(info.getValue())),
+      }),
+      columnHelper.accessor('possession_time', { header: () => 'Possession Time', cell: (info) => renderText(info.getValue()) }),
+      columnHelper.accessor('description', { header: () => 'Description', cell: (info) => renderText(info.getValue()) }),
     ],
     [],
   );
 
   const table = useReactTable({
-    data,
+    data: records,
     columns,
     state: { globalFilter, columnVisibility },
     onGlobalFilterChange: setGlobalFilter,
@@ -101,7 +121,7 @@ export function CrmRecordsTable({ records, onRefresh }: CrmRecordsTableProps): J
     initialState: { pagination: { pageSize: PAGE_SIZE } },
   });
 
-  const handleRowClick = useCallback((record: EnrichedCrmRecord): void => {
+  const handleRowClick = useCallback((record: CrmRecord): void => {
     setSelectedRecord(record);
   }, []);
 
@@ -115,7 +135,7 @@ export function CrmRecordsTable({ records, onRefresh }: CrmRecordsTableProps): J
         </div>
         <h3 className="font-display mt-5 text-lg font-bold text-body">No CRM records yet</h3>
         <p className="mt-2 max-w-sm text-sm text-muted">
-          Once AI extraction completes, your structured CRM records will appear here.
+          Once AI extraction completes, your structured GrowEasy CRM records will appear here.
         </p>
       </div>
     );
@@ -153,14 +173,14 @@ export function CrmRecordsTable({ records, onRefresh }: CrmRecordsTableProps): J
                 Columns
               </button>
               {showColumnMenu && (
-                <div className="absolute right-0 z-20 mt-2 w-52 rounded-xl border border-subtle bg-surface-elevated p-2 shadow-card dark:shadow-card-dark">
+                <div className="absolute right-0 z-20 mt-2 max-h-72 w-56 overflow-y-auto rounded-xl border border-subtle bg-surface-elevated p-2 shadow-lg dark:shadow-xl">
                   {table.getAllLeafColumns().map((column) => (
                     <label key={column.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-body hover:bg-surface-muted">
                       <input
                         type="checkbox"
                         checked={column.getIsVisible()}
                         onChange={column.getToggleVisibilityHandler()}
-                        className="rounded border-subtle text-brand-600 focus:ring-brand-500"
+                        className="rounded border-subtle text-indigo-600 focus:ring-indigo-500"
                       />
                       {COLUMN_LABELS[column.id] ?? column.id}
                     </label>
