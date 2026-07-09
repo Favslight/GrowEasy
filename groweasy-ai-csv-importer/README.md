@@ -131,21 +131,15 @@ App runs at `http://localhost:3000`.
 ### Deploying to Render
 
 1. Push the repository to GitHub
-2. Create a new **Blueprint** from `render.yaml` in the Render dashboard
+2. Create a new **webservice** in the Render dashboard
 3. Set environment variables:
-   - **Backend:** `OPENAI_API_KEY`, `FRONTEND_URL` (your frontend URL)
-   - **Frontend:** `NEXT_PUBLIC_API_URL` (your backend URL, e.g. `https://leadsense-api.onrender.com`)
+   - **Backend:** `OPENAI_API_KEY`, `FRONTEND_URL`
+   - **Frontend:** `NEXT_PUBLIC_API_URL` 
 4. Deploy both services
 
 The backend health check is available at `GET /health`.
 
-### Alternative: Vercel (Frontend) + Render (Backend)
 
-- Deploy **frontend** to Vercel with `NEXT_PUBLIC_API_URL` pointing to your Render backend
-- Deploy **backend** to Render with `FRONTEND_URL` set to your Vercel URL
-- Add both URLs to `FRONTEND_URL` if using multiple origins: `https://app.vercel.app,https://backup.onrender.com`
-
----
 
 ## GrowEasy CRM Fields
 
@@ -266,20 +260,6 @@ Upload → Parse → Normalize → Chunk (50) → Prompt Builder → OpenAI Prov
 | **Retry Service** | Max 2 retries for validation/transient failures |
 
 See [docs/architecture.md](docs/architecture.md) for design decisions.
-
----
-
-## Screenshots
-
-> Add screenshots after deployment:
-
-| Screen | Description |
-|--------|-------------|
-| Landing Page | Hero section with import CTA |
-| Upload | Drag-and-drop CSV upload card |
-| CSV Preview | Summary cards and preview table |
-| AI Processing | Animated processing timeline |
-| Results Dashboard | Analytics, CRM table, exports |
 
 ---
 
