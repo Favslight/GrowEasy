@@ -1,6 +1,5 @@
 # LeadSense — Render Blueprint
-# Deploy both services from this repository.
-# Set sensitive values (OPENAI_API_KEY) in the Render dashboard.
+
 
 services:
   - type: web
