@@ -5,7 +5,7 @@ const envSchema = z.object({
   PORT: z.string().default('5000'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o-mini'),
-  FRONTEND_URL: z.string().default('http://localhost:3000'),
+  FRONTEND_URL: z.string().default('https://leadsense-mudx.onrender.com'),
 });
 
 const validateEnv = (): z.infer<typeof envSchema> => {
